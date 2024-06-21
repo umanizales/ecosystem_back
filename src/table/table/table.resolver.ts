@@ -16,6 +16,7 @@ import { AddTableJoinInput } from './dto/add-table-join.input';
 import { ColumnGroup } from './entities/column-group';
 import { TableColumn } from 'src/shared/models/table-column';
 import { RemoveTableJoinInput } from './dto/remove-table-join.input';
+import { UpdateResultPayload } from 'src/shared/models/update-result';
 /**
  * @ignore
  */
@@ -64,5 +65,10 @@ export class TableResolver {
     @Parent() table: Omit<Table, 'columnGroups'>,
   ): Promise<ColumnGroup[]> {
     return this.tableService.resolveTableGroups(table);
+  }
+
+  @Mutation(() => UpdateResultPayload)
+  deleteTable(@Args('id') id: string) {
+    return this.tableService.delete(id);
   }
 }

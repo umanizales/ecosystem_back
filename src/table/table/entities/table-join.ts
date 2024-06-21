@@ -29,6 +29,13 @@ export class TableJoin {
   @IsOptional()
   @Prop({ default: [] })
   extraColumns: TableColumn[];
+
+  @Field(() => Date, {
+    description: 'If set, The date the entity was deleted.',
+    nullable: true,
+  })
+  @Prop()
+  deletedAt: Date;
 }
 /**
  * @ignore
