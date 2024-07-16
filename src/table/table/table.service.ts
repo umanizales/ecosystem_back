@@ -75,7 +75,7 @@ export class TableService {
    * find a table
    */
   async findOne(filters: { _id?: string; locator?: string }): Promise<Table> {
-    const table = await this.tableModel.findOne(filters);
+    const table = await this.tableModel.findOne({...filters,  deletedAt: null});
     if (!table)
       throw new NotFoundException(
         `Couldn't find a table by the specified filters: ${filters}`,
@@ -142,5 +142,13 @@ export class TableService {
         columns.push(...tableUtilities.columnsAnnouncementSelected());
     }
     return columns;
+  }
+
+  async delete(id: string) {
+    const updateResult = await this.tableModel.updateOne(
+      { _id: id },
+      { deletedAt: Date.now() },
+    );
+    return updateResult;
   }
 }
