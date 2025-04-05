@@ -4143,10 +4143,10 @@
     slash "3.0.0"
     source-map "^0.7.3"
 
-"@swc/core-darwin-x64@1.3.92":
+"@swc/core-darwin-arm64@1.3.92":
   version "1.3.92"
-  resolved "https://registry.npmjs.org/@swc/core-darwin-x64/-/core-darwin-x64-1.3.92.tgz"
-  integrity sha512-Q3XIgQfXyxxxms3bPN+xGgvwk0TtG9l89IomApu+yTKzaIIlf051mS+lGngjnh9L0aUiCp6ICyjDLtutWP54fw==
+  resolved "https://registry.npmjs.org/@swc/core-darwin-arm64/-/core-darwin-arm64-1.3.92.tgz"
+  integrity sha512-v7PqZUBtIF6Q5Cp48gqUiG8zQQnEICpnfNdoiY3xjQAglCGIQCjJIDjreZBoeZQZspB27lQN4eZ43CX18+2SnA==
 
 "@swc/core@^1.2.66", "@swc/core@^1.3.62", "@swc/core@^1.3.92", "@swc/core@>=1.2.50":
   version "1.3.92"
