@@ -1,5 +1,13 @@
 import { Body, Controller, Param, Post, Get, Query } from '@nestjs/common';
 import { StorageService } from './models/storage-service';
+import {
+  UploadedFile,
+  UseInterceptors,
+  BadRequestException,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Express } from 'express';
+
 /**
  * upload files endpoints
  */

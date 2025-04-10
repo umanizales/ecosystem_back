@@ -2,11 +2,13 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import * as bodyParser from 'body-parser';
+import { join } from 'path';
+import { NestExpressApplication } from '@nestjs/platform-express';
 /**
  * main config app
  */
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     cors: true,
   });
   app.enableCors({
@@ -24,6 +26,11 @@ async function bootstrap() {
     }),
   );
   app.use(bodyParser.json({ limit: '10mb' }));
+  
+  app.useStaticAssets(join(__dirname, '..', 'storage'), {
+    prefix: '/storage',
+  });
+
   const port = process.env.PORT ?? 3000;
   await app.listen(port, () => {
     console.log(`Server running on port ${port}`);
