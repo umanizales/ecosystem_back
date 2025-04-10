@@ -43,7 +43,7 @@ export class AwsService implements StorageService {
   }
 
   async createPresignedUrl(key: string, data?: Buffer): Promise<string> {
-    if (data) {
+    if (data && Buffer.isBuffer(data)) {
       await this.uploadTemporaryFile(key, data);
     }
     return this.getFileUrl(key);
