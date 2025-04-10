@@ -10,7 +10,7 @@ export class AwsService implements StorageService {
 
   constructor() {
     this.baseUploadPath = process.env.UPLOADS_PATH || './uploads';
-    this.publicUrlBase = process.env.UPLOADS_PUBLIC_URL || 'http://172.28.20.128:3500/uploads';
+    this.publicUrlBase = process.env.UPLOADS_PUBLIC_URL || 'http://190.121.154.48:3500/uploads';
   }
 
   private ensureDirectoryExists(path: string): void {
