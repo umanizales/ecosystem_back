@@ -53,6 +53,8 @@ export class StorageController {
       const mimeType = mime.lookup(fullPath) || 'application/octet-stream';
       const fileStream = createReadStream(fullPath);
 
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
       res.setHeader('Content-Type', mimeType);
       fileStream.pipe(res);
 
