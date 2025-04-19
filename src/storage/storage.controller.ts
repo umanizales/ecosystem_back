@@ -72,14 +72,27 @@ export class StorageController {
   @Post('*')
   async uploadSimulatedS3(@Req() req: Request, @Res() res: Response) {
     const key = req.originalUrl.replace(/^\/storage\//, '');
+    const contentType = req.headers['content-type'] || '';
+
+    console.log(`Solicitud POST simulada a S3 para: ${key}`);
+    console.log(`Content-Type recibido: ${contentType}`);
+
+    if (contentType.includes('multipart/form-data')) {
+      console.warn('Tipo de contenido no soportado para PUT simulado:', contentType);
+      return res.status(400).json({ message: 'Este endpoint no acepta multipart/form-data. Use FormData solo en /storage/upload' });
+    }
+
     const chunks: Uint8Array[] = [];
 
     req.on('data', (chunk) => {
+      console.log(`Recibido chunk de tamaño: ${chunk.length}`);
       chunks.push(chunk);
     });
 
     req.on('end', async () => {
       const buffer = Buffer.concat(chunks);
+      console.log(`Tamaño total del archivo recibido: ${buffer.length} bytes`);
+
       try {
         await this.storageService.createPresignedUrl(key, buffer);
         res.status(200).json({ message: 'Archivo subido correctamente' });
