@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, Get, Query } from '@nestjs/common';
+import { Body, Controller, Param, Post, Get, Query, Req, Res } from '@nestjs/common';
 import { StorageService } from './models/storage-service';
 import {
   UploadedFile,
@@ -31,8 +31,8 @@ export class StorageController {
   }
 
   @Get('*')
-  async serveFile(@Param() params, @Query() query, @Body() body, @Query() req: Request, @Body() res: Response) {
-    const requestedPath = req.originalUrl.replace('/storage/', '');
+  async serveFile(@Req() req: Request, @Res() res: Response) {
+    const requestedPath = req.originalUrl.replace(/^\/storage\//, '');
     const fullPath = join(process.env.UPLOADS_PATH || './storage', requestedPath);
 
     if (!existsSync(fullPath)) {
