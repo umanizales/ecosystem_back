@@ -55,6 +55,7 @@ export class StorageController {
 
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
       res.setHeader('Content-Type', mimeType);
       fileStream.pipe(res);
 
