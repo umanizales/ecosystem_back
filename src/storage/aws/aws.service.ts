@@ -43,6 +43,12 @@ export class AwsService implements StorageService {
   }
 
   async createPresignedUrl(key: string, data?: Buffer): Promise<string> {
+    const match = key.match(/(.+)\.([a-zA-Z0-9]+)-(\d{8,})$/);
+    if (match) {
+      const [, name, ext, timestamp] = match;
+      key = `${name}-${timestamp}.${ext}`;
+    }
+
     if (data && Buffer.isBuffer(data)) {
       await this.uploadTemporaryFile(key, data);
     }
