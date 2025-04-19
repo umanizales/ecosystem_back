@@ -29,11 +29,17 @@ export class AwsService implements StorageService {
   }
 
   async uploadTemporaryFile(key: string, data: Buffer): Promise<string> {
+    if (!data || !Buffer.isBuffer(data) || data.length < 10) {
+      console.error('Archivo inválido o vacío:', key);
+      throw new InternalServerErrorException('El archivo recibido está vacío o no es válido');
+    }
+
     const fullPath = this.getFilePath(key);
     const dir = fullPath.substring(0, fullPath.lastIndexOf('/'));
     this.ensureDirectoryExists(dir);
 
     try {
+      console.log(`Guardando archivo "${key}" con tamaño: ${data.length} bytes`);
       writeFileSync(fullPath, data);
       return this.getFileUrl(key);
     } catch (error) {
