@@ -65,4 +65,30 @@ export class StorageController {
       return res.status(500).json({ message: 'Error al procesar la solicitud' });
     }
   }
+
+  @Post('*')
+  async uploadSimulatedS3(@Req() req: Request, @Res() res: Response) {
+    const key = req.originalUrl.replace(/^\/storage\//, '');
+    const chunks: Uint8Array[] = [];
+
+    req.on('data', (chunk) => {
+      chunks.push(chunk);
+    });
+
+    req.on('end', async () => {
+      const buffer = Buffer.concat(chunks);
+      try {
+        await this.storageService.createPresignedUrl(key, buffer);
+        res.status(200).json({ message: 'Archivo subido correctamente' });
+      } catch (err) {
+        console.error('Error guardando archivo simulado tipo S3:', err);
+        res.status(500).json({ message: 'Error guardando archivo' });
+      }
+    });
+
+    req.on('error', (err) => {
+      console.error('Error leyendo datos:', err);
+      res.status(500).json({ message: 'Error leyendo datos del archivo' });
+    });
+  }
 }
