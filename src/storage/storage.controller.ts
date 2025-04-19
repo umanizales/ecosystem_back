@@ -20,13 +20,12 @@ export class StorageController {
   constructor(private readonly storageService: StorageService) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor('file'))
-  async create(@UploadedFile() file: MulterFile, @Body('name') key: string): Promise<any> {
-    if (!file || !key) {
-      throw new BadRequestException('Archivo o clave (key) no proporcionados');
+  async create(@Body('name') key: string, @Body('publicFile') publicFile?: boolean): Promise<any> {
+    if (!key) {
+      throw new BadRequestException('Clave (key) no proporcionada');
     }
 
-    const result = await this.storageService.createPresignedUrl(key, file.buffer);
+    const result = await this.storageService.createPresignedUrl(key);
     return { url: result };
   }
 
