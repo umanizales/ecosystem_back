@@ -30,6 +30,17 @@ export class StorageController {
     return { url: result };
   }
 
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadFromPresigned(@Query('key') key: string, @UploadedFile() file: MulterFile) {
+    if (!file || !key) {
+      throw new BadRequestException('Archivo o clave (key) no proporcionados');
+    }
+
+    const result = await this.storageService.createPresignedUrl(key, file.buffer);
+    return { url: result };
+  }
+
   @Get('*')
   async serveFile(@Req() req: Request, @Res() res: Response) {
     const requestedPath = req.originalUrl.replace(/^\/storage\//, '');
