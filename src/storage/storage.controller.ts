@@ -6,7 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Express } from 'express';
+import { File as MulterFile } from 'multer';
 
 /**
  * upload files endpoints
@@ -16,11 +16,13 @@ export class StorageController {
   constructor(private readonly storageService: StorageService) {}
 
   @Post()
-  async create(@Body() body: any): Promise<any> {
-    const result = await this.storageService.createPresignedUrl(
-      body.name,
-      body.publicFile,
-    );
+  @UseInterceptors(FileInterceptor('file'))
+  async create(@UploadedFile() file: MulterFile, @Body('name') key: string): Promise<any> {
+    if (!file || !key) {
+      throw new BadRequestException('Archivo o clave (key) no proporcionados');
+    }
+
+    const result = await this.storageService.createPresignedUrl(key, file.buffer);
     return { url: result };
   }
 
