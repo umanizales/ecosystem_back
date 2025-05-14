@@ -553,26 +553,35 @@ export class StartupService implements FormDocumentService<Startup> {
   ): Promise<DownloadResult> {
     const config = await this.tableConfigService.findOne(configId);
     const tableColumns = config.columns;
+  
     const outputProjection =
       requestUtilities.getProjectionFromConfigTable(tableColumns);
+  
     const pageResult = await this.findManyPage(
       { ...request, skip: 0, limit: 10000 },
       user,
       outputProjection,
     );
+  
     const rows = excelUtilities.parseDocumentsToRows(
       pageResult.documents,
       tableColumns,
     );
+  
     const columns = tableColumns.map((col) => {
       return { header: col.label, width: col.label.length + 3 };
     });
+  
     const data = await excelUtilities.buildWorkbookBuffer(
       columns,
       rows,
       format,
     );
-    const fileUrl = await this.downloadService.uploadTempFile(data, format);
+  
+    const nodeBuffer = Buffer.from(data as Uint8Array);
+  
+    const fileUrl = await this.downloadService.uploadTempFile(nodeBuffer, format);
+  
     return { url: fileUrl };
   }
 

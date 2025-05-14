@@ -1,8 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { StorageService } from '../models/storage-service';
-import { writeFileSync, existsSync, mkdirSync } from 'fs';
+import { writeFileSync, unlinkSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import { Request } from 'express';
 
 @Injectable()
 export class AwsService implements StorageService {
@@ -20,73 +19,45 @@ export class AwsService implements StorageService {
     }
   }
 
-  private getFilePath(key: string): string {
-    return join(this.baseUploadPath, key);
+  private getFilePath(relativePath: string): string {
+    return join(this.baseUploadPath, relativePath);
   }
 
-  private getFileUrl(key: string): string {
-    return `${this.publicUrlBase}/${key.replace(/\\/g, '/')}`;
+  private getFileUrl(relativePath: string): string {
+    return `${this.publicUrlBase}/${relativePath.replace(/\\/g, '/')}`;
   }
 
-  async uploadTemporaryFile(key: string, data: Buffer): Promise<string> {
+  async uploadFile(relativePath: string, data: Buffer): Promise<string> {
     if (!data || !Buffer.isBuffer(data) || data.length < 10) {
-      console.error('Archivo inválido o vacío:', key);
       throw new InternalServerErrorException('El archivo recibido está vacío o no es válido');
     }
 
-    const fullPath = this.getFilePath(key);
+    const fullPath = this.getFilePath(relativePath);
     const dir = fullPath.substring(0, fullPath.lastIndexOf('/'));
     this.ensureDirectoryExists(dir);
 
     try {
-      console.log(`Guardando archivo "${key}" con tamaño: ${data.length} bytes`);
       writeFileSync(fullPath, data);
-      return this.getFileUrl(key);
+      return this.getFileUrl(relativePath);
     } catch (error) {
-      console.error(error);
-      throw new InternalServerErrorException('Error guardando archivo en disco');
+      console.error('Error al guardar archivo:', error);
+      throw new InternalServerErrorException('Error al guardar archivo en disco');
     }
   }
 
-  async createPresignedUrl(key: string, data?: Buffer): Promise<string> {
-    const match = key.match(/(.+)\.([a-zA-Z0-9]+)-(\d{8,})$/);
-    if (match) {
-      const [, name, ext, timestamp] = match;
-      key = `${name}-${timestamp}.${ext}`;
+  async deleteFile(relativePath: string): Promise<void> {
+    const fullPath = this.getFilePath(relativePath);
+    try {
+      if (existsSync(fullPath)) {
+        unlinkSync(fullPath);
+      }
+    } catch (error) {
+      console.error('Error al eliminar archivo:', error);
+      throw new InternalServerErrorException('Error al eliminar archivo del disco');
     }
-
-    if (data && Buffer.isBuffer(data)) {
-      await this.uploadTemporaryFile(key, data);
-    }
-    return this.getFileUrl(key);
   }
 
-  async getPresignedUrl(key: string): Promise<string> {
-    return this.getFileUrl(key);
-  }
-
-  async handlePutUpload(key: string, req: Request): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const fullPath = this.getFilePath(key);
-      const dir = fullPath.substring(0, fullPath.lastIndexOf('/'));
-      this.ensureDirectoryExists(dir);
-
-      const chunks: Uint8Array[] = [];
-      req.on('data', chunk => chunks.push(chunk));
-      req.on('end', () => {
-        try {
-          const buffer = Buffer.concat(chunks);
-          writeFileSync(fullPath, buffer);
-          resolve();
-        } catch (err) {
-          console.error('Error al guardar archivo por PUT:', err);
-          reject(new InternalServerErrorException('Error guardando archivo desde PUT'));
-        }
-      });
-      req.on('error', err => {
-        console.error('Error de stream al recibir archivo:', err);
-        reject(new InternalServerErrorException('Error en la transmisión del archivo'));
-      });
-    });
+  getPublicUrl(relativePath: string): string {
+    return this.getFileUrl(relativePath);
   }
 }

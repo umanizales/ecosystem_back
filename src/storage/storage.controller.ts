@@ -1,49 +1,54 @@
-import { Body, Controller, Param, Post, Get, Query, Req, Res } from '@nestjs/common';
-import { StorageService } from './models/storage-service';
 import {
+  Controller,
+  Post,
+  Get,
+  Query,
+  Req,
+  Res,
   UploadedFile,
   UseInterceptors,
   BadRequestException,
+  Delete,
 } from '@nestjs/common';
+import { StorageService } from './models/storage-service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { File as MulterFile } from 'multer';
 import { createReadStream, existsSync } from 'fs';
-import { join } from 'path';
+import { join, normalize, sep } from 'path';
 import * as mime from 'mime-types';
 import { Request, Response } from 'express';
 
 /**
- * upload files endpoints
+ * Local storage controller
  */
 @Controller('storage')
 export class StorageController {
   constructor(private readonly storageService: StorageService) {}
 
-  @Post()
-  async create(@Body('name') key: string, @Body('publicFile') publicFile?: boolean): Promise<any> {
-    if (!key) {
-      throw new BadRequestException('Clave (key) no proporcionada');
-    }
-
-    const result = await this.storageService.createPresignedUrl(key);
-    return { url: result };
-  }
-
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFromPresigned(@Query('key') key: string, @UploadedFile() file: MulterFile) {
+  async uploadFile(
+    @Query('key') key: string,
+    @UploadedFile() file: MulterFile
+  ) {
     if (!file || !key) {
       throw new BadRequestException('Archivo o clave (key) no proporcionados');
     }
 
-    const result = await this.storageService.createPresignedUrl(key, file.buffer);
-    return { url: result };
+    const url = await this.storageService.uploadFile(key, file.buffer);
+    return { url };
   }
 
   @Get('*')
   async serveFile(@Req() req: Request, @Res() res: Response) {
     const requestedPath = req.originalUrl.replace(/^\/storage\//, '');
-    const fullPath = join(process.env.UPLOADS_PATH || './storage', requestedPath);
+    const basePath = join(process.env.UPLOADS_PATH || './storage');
+    const normalizedPath = normalize(requestedPath);
+    const fullPath = join(basePath, normalizedPath);
+
+    if (!fullPath.startsWith(basePath + sep)) {
+      return res.status(403).json({ message: 'Acceso denegado' });
+    }
 
     if (!existsSync(fullPath)) {
       return res.status(404).json({ message: 'Archivo no encontrado' });
@@ -57,6 +62,7 @@ export class StorageController {
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
       res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
       res.setHeader('Content-Type', mimeType);
+
       fileStream.pipe(res);
 
       fileStream.on('error', (err) => {
@@ -69,42 +75,18 @@ export class StorageController {
     }
   }
 
-  @Post('*')
-  async uploadSimulatedS3(@Req() req: Request, @Res() res: Response) {
-    const key = req.originalUrl.replace(/^\/storage\//, '');
-    const contentType = req.headers['content-type'] || '';
+  @Delete('*')
+  async deleteFile(@Req() req: Request) {
+    const requestedPath = req.originalUrl.replace(/^\/storage\//, '');
+    const basePath = join(process.env.UPLOADS_PATH || './storage');
+    const normalizedPath = normalize(requestedPath);
+    const fullPath = join(basePath, normalizedPath);
 
-    console.log(`Solicitud POST simulada a S3 para: ${key}`);
-    console.log(`Content-Type recibido: ${contentType}`);
-
-    if (contentType.includes('multipart/form-data')) {
-      console.warn('Tipo de contenido no soportado para PUT simulado:', contentType);
-      return res.status(400).json({ message: 'Este endpoint no acepta multipart/form-data. Use FormData solo en /storage/upload' });
+    if (!fullPath.startsWith(basePath + sep)) {
+      return { message: 'Acceso denegado' };
     }
 
-    const chunks: Uint8Array[] = [];
-
-    req.on('data', (chunk) => {
-      console.log(`Recibido chunk de tamaño: ${chunk.length}`);
-      chunks.push(chunk);
-    });
-
-    req.on('end', async () => {
-      const buffer = Buffer.concat(chunks);
-      console.log(`Tamaño total del archivo recibido: ${buffer.length} bytes`);
-
-      try {
-        await this.storageService.createPresignedUrl(key, buffer);
-        res.status(200).json({ message: 'Archivo subido correctamente' });
-      } catch (err) {
-        console.error('Error guardando archivo simulado tipo S3:', err);
-        res.status(500).json({ message: 'Error guardando archivo' });
-      }
-    });
-
-    req.on('error', (err) => {
-      console.error('Error leyendo datos:', err);
-      res.status(500).json({ message: 'Error leyendo datos del archivo' });
-    });
+    await this.storageService.deleteFile(normalizedPath);
+    return { message: 'Archivo eliminado correctamente' };
   }
 }
